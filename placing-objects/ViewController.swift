@@ -14,6 +14,9 @@ class ViewController: UIViewController, ARSCNViewDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
     
+    var balls = [SCNNode]()
+    var firstVisibility = true
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -33,11 +36,15 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
 
-        // Run the view's session
         sceneView.session.run(configuration)
+        
+        for n in 1...20 {
+            let multiplier = Float(n)
+            let vector = SCNVector3Make(0, (-0.1)*multiplier, (-0.1)*multiplier)
+            createBall(position: vector)
+        }
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -46,34 +53,36 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Pause the view's session
         sceneView.session.pause()
     }
+    
+    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+        
+        guard let firstBallInScene = balls.first else {
+            return
+        }
+        if firstVisibility {
+            let isVisible = renderer.isNode(firstBallInScene, insideFrustumOf: renderer.pointOfView!)
+            
+            if isVisible {
+                firstVisibility = false
+            }
+        } else {
+            let isVisible = renderer.isNode(firstBallInScene, insideFrustumOf: renderer.pointOfView!)
+            if !isVisible {
+                firstBallInScene.geometry = firstBallInScene.geometry!.copy() as? SCNGeometry
+                firstBallInScene.geometry?.firstMaterial = firstBallInScene.geometry?.firstMaterial!.copy() as? SCNMaterial
+                firstBallInScene.geometry?.firstMaterial?.diffuse.contents = UIColor.red
+                balls.removeFirst()
+            }
+        }
+    }
 
-    // MARK: - ARSCNViewDelegate
-    
-/*
-    // Override to create and configure nodes for anchors added to the view's session.
-    func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
-        let node = SCNNode()
-     
-        return node
-    }
-*/
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        
-        let result = sceneView.hitTest(touch.location(in: sceneView), types: [ARHitTestResult.ResultType.featurePoint])
-        guard let hitResult = result.last else { return }
-        let hitTransform = SCNMatrix4.init(hitResult.worldTransform)
-        
-        let hitVector = SCNVector3Make(hitTransform.m41, hitTransform.m42, hitTransform.m43)
-        createBall(position: hitVector )
-    }
-    
     func createBall(position: SCNVector3) {
-        var ballShape = SCNSphere(radius: 0.01)
-        var ballNode = SCNNode(geometry: ballShape)
+        let ballShape = SCNSphere(radius: 0.01)
+        let ballNode = SCNNode(geometry: ballShape)
         ballNode.position = position
         sceneView.scene.rootNode.addChildNode(ballNode)
+        
+        balls.append(ballNode)
     }
     
     func session(_ session: ARSession, didFailWithError error: Error) {
