@@ -20,16 +20,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Set the view's delegate
         sceneView.delegate = self
-        
-        // Show statistics such as fps and timing information
         sceneView.showsStatistics = true
         
-        // Create a new scene
         let scene = SCNScene(named: "art.scnassets/ship.scn")!
-        
-        // Set the scene to the view
         sceneView.scene = scene
     }
     
@@ -40,9 +34,11 @@ class ViewController: UIViewController, ARSCNViewDelegate {
 
         sceneView.session.run(configuration)
         
-        for n in 1...20 {
-            let multiplier = Float(n)
-            let vector = SCNVector3Make(0, (-0.1)*multiplier, (-0.1)*multiplier)
+        for _ in 1...20 {
+            let xRandom = Float.random(in: (-1)...0)
+            let yRandom = Float.random(in: (-1)...0)
+            let zRandom = Float.random(in: (-1)...0)
+            let vector = SCNVector3Make(xRandom, yRandom, zRandom)
             createBall(position: vector)
         }
     }
@@ -66,6 +62,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
                 firstVisibility = false
             }
         } else {
+            //see if is visible
             let isVisible = renderer.isNode(firstBallInScene, insideFrustumOf: renderer.pointOfView!)
             if !isVisible {
                 firstBallInScene.geometry = firstBallInScene.geometry!.copy() as? SCNGeometry
